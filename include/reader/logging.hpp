@@ -1,7 +1,9 @@
 #pragma once
 
-namespace reader {
+#include <spdlog/spdlog.h>
 
-void init_logging();
+namespace reader::logging {
 
-} // namespace reader
+void initialize();
+
+} // namespace reader::logging

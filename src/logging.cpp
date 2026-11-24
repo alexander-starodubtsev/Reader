@@ -1,27 +1,13 @@
 #include "reader/logging.hpp"
 
-#include <memory>
+namespace reader::logging {
 
-#include <spdlog/sinks/basic_file_sink.h>
-#include <spdlog/sinks/stdout_color_sinks.h>
-#include <spdlog/spdlog.h>
+void initialize() {
+    spdlog::set_level(spdlog::level::debug);
 
-namespace reader {
+    spdlog::set_pattern("[%Y-%m-%d %H:%M:%S] [%^%l%$] %v");
 
-void init_logging() {
-    auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
-
-    auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>("reader.log", true);
-
-    auto logger = std::make_shared<spdlog::logger>(
-        "reader", spdlog::sinks_init_list{console_sink, file_sink});
-
-    logger->set_level(spdlog::level::info);
-    logger->flush_on(spdlog::level::err);
-
-    spdlog::set_default_logger(logger);
-
-    spdlog::info("Reader application started");
+    spdlog::info("Logging initialized");
 }
 
-} // namespace reader
+} // namespace reader::logging

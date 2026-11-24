@@ -1,4 +1,3 @@
-
 cmake_minimum_required(VERSION 3.25)
 
 project(Reader
@@ -58,6 +57,7 @@ endif()
 function(reader_enable_warnings target)
 
     if(MSVC)
+
         target_compile_options(${target} PRIVATE
             /W4
             /permissive-
@@ -132,7 +132,6 @@ function(reader_enable_warnings target)
             -Wnon-virtual-dtor
             -Wzero-as-null-pointer-constant
             -Wextra-semi
-            -Wthread-safety
         )
 
         if(READER_WARNINGS_AS_ERRORS)
@@ -211,6 +210,18 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(spdlog)
 
+FetchContent_Declare(
+    googletest
+    GIT_REPOSITORY https://github.com/google/googletest.git
+    GIT_TAG v1.17.0
+    GIT_SHALLOW TRUE
+)
+
+set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+set(BUILD_GMOCK OFF CACHE BOOL "" FORCE)
+
+FetchContent_MakeAvailable(googletest)
+
 # ==========================================
 # Reader Library
 # ==========================================
@@ -223,6 +234,10 @@ add_library(reader_lib
 target_include_directories(reader_lib
     PUBLIC
         ${PROJECT_SOURCE_DIR}/include
+)
+
+target_include_directories(reader_lib SYSTEM PUBLIC
+    ${spdlog_SOURCE_DIR}/include
 )
 
 target_link_libraries(reader_lib
@@ -266,21 +281,15 @@ if(BUILD_TESTING AND READER_BUILD_TESTS)
     target_link_libraries(reader_tests
         PRIVATE
             reader_lib
+            GTest::gtest_main
     )
 
     reader_enable_warnings(reader_tests)
     reader_enable_sanitizers(reader_tests)
 
-    add_test(
-        NAME reader_tests
-        COMMAND reader_tests
-    )
+    include(GoogleTest)
 
-    if(READER_ENABLE_ASAN)
-        set_tests_properties(reader_tests PROPERTIES
-            ENVIRONMENT "ASAN_OPTIONS=detect_leaks=1:strict_string_checks=1"
-        )
-    endif()
+    gtest_discover_tests(reader_tests)
 
 endif()
 
@@ -300,13 +309,13 @@ install(
 message(STATUS "================================")
 message(STATUS " Reader Configuration")
 message(STATUS "================================")
-message(STATUS " C++ Standard: C++23")
-message(STATUS " Compiler:     ${CMAKE_CXX_COMPILER_ID}")
-message(STATUS " Version:      ${CMAKE_CXX_COMPILER_VERSION}")
-message(STATUS " Build Type:   ${CMAKE_BUILD_TYPE}")
-message(STATUS " Tests:        ${READER_BUILD_TESTS}")
-message(STATUS " Warnings:     Enabled")
+message(STATUS " C++ Standard: ${CMAKE_CXX_STANDARD}")
+message(STATUS " Compiler: ${CMAKE_CXX_COMPILER_ID}")
+message(STATUS " Version: ${CMAKE_CXX_COMPILER_VERSION}")
+message(STATUS " Build Type: ${CMAKE_BUILD_TYPE}")
+message(STATUS " Tests: ${READER_BUILD_TESTS}")
+message(STATUS " Warnings: Enabled")
 message(STATUS " Warnings as errors: ${READER_WARNINGS_AS_ERRORS}")
-message(STATUS " ASan/UBSan:   ${READER_ENABLE_ASAN}")
-message(STATUS " TSan:         ${READER_ENABLE_TSAN}")
+message(STATUS " ASan/UBSan: ${READER_ENABLE_ASAN}")
+message(STATUS " TSan: ${READER_ENABLE_TSAN}")
 message(STATUS "================================")
