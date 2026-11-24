@@ -63,7 +63,7 @@ TEST_F(ReaderTests, ReadsEmptyFile) {
 TEST_F(ReaderTests, ThrowsWhenFileDoesNotExist) {
     const auto path = test_directory / "nonexistent.txt";
 
-    EXPECT_THROW(reader.read(path.string()), std::runtime_error);
+    EXPECT_THROW(static_cast<void>(reader.read(path.string())), std::runtime_error);
 }
 
 TEST_F(ReaderTests, ReadsLargeFile) {
