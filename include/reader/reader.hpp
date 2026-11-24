@@ -5,11 +5,12 @@
 namespace reader {
 
 class Reader {
-  public:
-    Reader() = default;
+  private:
+    std::string name;
 
-    [[nodiscard]]
-    std::string read(const std::string& path) const;
+  public:
+    Reader(const std::string& str) : name(str){};
+    void show() const;
 };
 
 } // namespace reader

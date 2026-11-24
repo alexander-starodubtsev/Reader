@@ -3,15 +3,11 @@
 #include <exception>
 #include <iostream>
 
-int main(int argc, char* argv[]) {
-    if (argc < 2) {
-        std::cerr << "Usage: reader <file>\n";
-        return 1;
-    }
-
+int main() {
     try {
-        reader::Reader reader;
-        std::cout << reader.read(argv[1]);
+        reader::Reader reader{"Book's name"};
+        spdlog::info("File successfully made");
+        reader.show();
     } catch (const std::exception& e) {
         std::cerr << "Error: " << e.what() << '\n';
         return 1;

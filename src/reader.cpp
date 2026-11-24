@@ -1,22 +1,9 @@
 #include "reader/reader.hpp"
 
-#include <fstream>
-#include <sstream>
-#include <stdexcept>
+#include <ostream>
 
 namespace reader {
 
-std::string Reader::read(const std::string& path) const {
-    std::ifstream file(path);
-
-    if (!file.is_open()) {
-        throw std::runtime_error("Cannot open file: " + path);
-    }
-
-    std::stringstream buffer;
-    buffer << file.rdbuf();
-
-    return buffer.str();
-}
+void Reader::show() const { std::cout << name << std::endl; }
 
 } // namespace reader
