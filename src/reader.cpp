@@ -2,6 +2,7 @@
 #include "reader/logging.hpp"
 
 #include <fstream>
+#include <spdlog/spdlog.h>
 #include <sstream>
 #include <stdexcept>
 
