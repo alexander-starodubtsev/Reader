@@ -1,0 +1,127 @@
+name: Reader CI
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
+
+permissions:
+  contents: read
+
+concurrency:
+  group: reader-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+
+  # ========================================
+  # Build and Test on all platforms
+  # ========================================
+
+  build:
+    name: Build and Test (${{ matrix.os }})
+
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
+          - macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure
+        run: cmake --preset default
+
+      - name: Build
+        run: cmake --build --preset default --parallel 2
+
+      - name: Test
+        run: ctest --preset default
+
+  # ========================================
+  # Code Formatting
+  # ========================================
+
+  format:
+    name: Format Check
+
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install clang-format
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang-format
+
+      - name: Check formatting
+        run: python3 tools.py format-check
+
+  # ========================================
+  # AddressSanitizer + UBSan + LSan
+  # ========================================
+
+  asan:
+    name: ASan + UBSan + LSan
+
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    env:
+      CC: gcc
+      CXX: g++
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure
+        run: cmake --preset asan
+
+      - name: Build
+        run: cmake --build --preset asan --parallel 2
+
+      - name: Test
+        run: ctest --preset asan
+
+  # ========================================
+  # ThreadSanitizer
+  # ========================================
+
+  tsan:
+    name: ThreadSanitizer
+
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    env:
+      CC: gcc
+      CXX: g++
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure
+        run: cmake --preset tsan
+
+      - name: Build
+        run: cmake --build --preset tsan --parallel 2
+
+      - name: Test
+        run: ctest --preset tsan
