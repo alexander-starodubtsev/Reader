@@ -41,7 +41,19 @@
 # Build directories
 [Bb]uild/
 [Bb]uild-*/
+.build/
+.cxx/
 cmake-build-*/
+.gradle/
+**/build/
+**/.kotlin/
+.swiftpm/
+apps/apple/.build/
+apps/apple/Frameworks/
+DerivedData/
+*.xcuserstate
+xcuserdata/
+apps/apple/GoodReader.xcodeproj/
 
 # CMake generated files
 CMakeFiles/

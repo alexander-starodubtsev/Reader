@@ -1,0 +1,23 @@
+included:
+  - apps/apple/Sources
+  - apps/apple/Tests
+  - apps/apple/AppSupport
+  - apps/ios
+  - apps/iosTests
+  - apps/macos
+  - apps/macosTests
+excluded:
+  - apps/apple/.build
+  - apps/apple/.swiftpm
+
+line_length:
+  warning: 120
+  error: 160
+
+type_body_length:
+  warning: 300
+  error: 400
+
+file_length:
+  warning: 500
+  error: 800
