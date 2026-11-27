@@ -1,0 +1,37 @@
+CREATE TABLE Book (
+    id TEXT NOT NULL PRIMARY KEY,
+    title TEXT NOT NULL,
+    author TEXT,
+    format TEXT NOT NULL,
+    file_uri TEXT NOT NULL,
+    word_count INTEGER
+);
+
+CREATE INDEX book_title_idx ON Book(title COLLATE NOCASE);
+CREATE INDEX book_author_idx ON Book(author COLLATE NOCASE);
+
+selectAllBooks:
+SELECT *
+FROM Book
+ORDER BY title COLLATE NOCASE;
+
+selectBookById:
+SELECT *
+FROM Book
+WHERE id = ?;
+
+searchBooks:
+SELECT *
+FROM Book
+WHERE title LIKE '%' || ? || '%' COLLATE NOCASE
+   OR COALESCE(author, '') LIKE '%' || ? || '%' COLLATE NOCASE
+ORDER BY title COLLATE NOCASE;
+
+insertBook:
+INSERT INTO Book(id, title, author, format, file_uri, word_count)
+VALUES (?, ?, ?, ?, ?, ?);
+
+updateBook:
+UPDATE Book
+SET title = ?, author = ?, format = ?, file_uri = ?, word_count = ?
+WHERE id = ?;

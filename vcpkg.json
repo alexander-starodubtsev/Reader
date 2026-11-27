@@ -1,0 +1,13 @@
+{
+  "name": "goodreader",
+  "version-string": "0.1.0",
+  "builtin-baseline": "9fa95bf687fa6ae7f2da0673a8067e5fc1515c27",
+  "dependencies": [
+    "date",
+    "gtest",
+    "sqlite3",
+    "taglib",
+    "utf8proc",
+    "zlib"
+  ]
+}

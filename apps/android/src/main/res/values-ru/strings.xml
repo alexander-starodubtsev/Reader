@@ -1,0 +1,25 @@
+<resources>
+    <string name="tab_home">Главная</string>
+    <string name="tab_library">Библиотека</string>
+    <string name="tab_add_book">Загрузить книгу</string>
+    <string name="tab_profile">Профиль</string>
+    <string name="home_empty_title">Нет открытых книг</string>
+    <string name="home_empty_description">Вы ещё не открывали книги.</string>
+    <string name="profile_empty_title">Статистики пока нет</string>
+    <string name="profile_empty_description">Здесь появится статистика чтения и прослушивания.</string>
+    <string name="reader_close">Закрыть</string>
+    <string name="reader_listen_from_here">Слушать с этого места</string>
+    <string name="reader_read_from_here">Читать с этого места</string>
+    <string name="reader_position_inaccurate">Позиция может быть неточной</string>
+    <string name="reader_pause_audio">Пауза</string>
+    <string name="reader_play_audio">Воспроизвести</string>
+    <string name="reader_audio_error">Не удалось загрузить или воспроизвести аудиофайлы.</string>
+    <string name="reader_continue_reading">Продолжить чтение</string>
+    <string name="reader_loading">Открываем книгу…</string>
+    <string name="reader_open_error">Не удалось открыть книгу.</string>
+    <string name="reader_no_text">В книге не найден читаемый текст.</string>
+    <string name="reader_contents">Содержание</string>
+    <string name="reader_progress">Прочитано %1$d%%</string>
+    <string name="reader_previous">Назад</string>
+    <string name="reader_next">Далее</string>
+</resources>

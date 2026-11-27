@@ -1,0 +1,93 @@
+name: GoodReader
+options:
+  deploymentTarget:
+    iOS: "17.0"
+    macOS: "14.0"
+packages:
+  GoodReaderApple:
+    path: .
+targets:
+  GoodReaderiOS:
+    type: application
+    platform: iOS
+    sources:
+      - path: ../ios
+      - path: AppSupport/AppleKotlinLibraryStore.swift
+    dependencies:
+      - package: GoodReaderApple
+        product: GoodReaderApple
+      - framework: Frameworks/GoodReaderCore.xcframework
+        embed: false
+        codeSign: false
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.goodreader.ios
+        GENERATE_INFOPLIST_FILE: YES
+        CURRENT_PROJECT_VERSION: "1"
+        MARKETING_VERSION: "0.1.0"
+        SWIFT_VERSION: "5.0"
+        TARGETED_DEVICE_FAMILY: "1,2"
+        OTHER_LDFLAGS: "$(inherited) -lsqlite3"
+  GoodReaderiOSTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: ../iosTests
+    dependencies:
+      - target: GoodReaderiOS
+      - package: GoodReaderApple
+        product: GoodReaderApple
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        SWIFT_VERSION: "5.0"
+  GoodReadermacOS:
+    type: application
+    platform: macOS
+    sources:
+      - path: ../macos
+      - path: AppSupport/AppleKotlinLibraryStore.swift
+    dependencies:
+      - package: GoodReaderApple
+        product: GoodReaderApple
+      - framework: Frameworks/GoodReaderCore.xcframework
+        embed: false
+        codeSign: false
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.goodreader.macos
+        GENERATE_INFOPLIST_FILE: YES
+        CURRENT_PROJECT_VERSION: "1"
+        MARKETING_VERSION: "0.1.0"
+        SWIFT_VERSION: "5.0"
+        OTHER_LDFLAGS: "$(inherited) -lsqlite3"
+  GoodReadermacOSTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: ../macosTests
+    dependencies:
+      - target: GoodReadermacOS
+      - package: GoodReaderApple
+        product: GoodReaderApple
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        SWIFT_VERSION: "5.0"
+schemes:
+  GoodReaderiOS:
+    build:
+      targets:
+        GoodReaderiOS: all
+        GoodReaderiOSTests: [test]
+    test:
+      targets:
+        - GoodReaderiOSTests
+  GoodReadermacOS:
+    build:
+      targets:
+        GoodReadermacOS: all
+        GoodReadermacOSTests: [test]
+    test:
+      targets:
+        - GoodReadermacOSTests

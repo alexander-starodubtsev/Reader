@@ -1,127 +1,199 @@
-name: Reader CI
+name: GoodReader CI
 
 on:
   push:
-    branches:
-      - main
-      - develop
   pull_request:
-    branches:
-      - main
-      - develop
 
 permissions:
   contents: read
 
 concurrency:
-  group: reader-ci-${{ github.ref }}
+  group: goodreader-ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-
-  # ========================================
-  # Build and Test on all platforms
-  # ========================================
-
-  build:
-    name: Build and Test (${{ matrix.os }})
-
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 20
-
+  native-core:
+    name: C++ core / ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os:
-          - ubuntu-latest
-          - windows-latest
-          - macos-latest
-
+        os: [ubuntu-latest, macos-15, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Configure
+      - uses: actions/checkout@v4
+      - name: Set up MSVC environment
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+      - uses: lukka/run-vcpkg@v11
+        with:
+          runVcpkgInstall: true
+      - name: Configure C++ core
         run: cmake --preset default
-
-      - name: Build
-        run: cmake --build --preset default --parallel 2
-
-      - name: Test
+      - name: Build C++ core and tests
+        run: cmake --build --preset default
+      - name: Run C++ tests
         run: ctest --preset default
 
-  # ========================================
-  # Code Formatting
-  # ========================================
-
-  format:
-    name: Format Check
-
+  native-quality:
+    name: C++ formatting and static analysis
     runs-on: ubuntu-latest
-    timeout-minutes: 10
-
+    timeout-minutes: 30
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Install clang-format
+      - uses: actions/checkout@v4
+      - name: Install LLVM tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y clang-format
+          sudo apt-get install -y clang-format clang-tidy
+      - uses: lukka/run-vcpkg@v11
+        with:
+          runVcpkgInstall: true
+      - name: Check C++ formatting
+        run: find core bridge tests -type f \( -name '*.cpp' -o -name '*.hpp' -o -name '*.h' \) -print0 | xargs -0 clang-format --dry-run --Werror
+      - name: Configure for clang-tidy
+        run: cmake --preset default
+      - name: Run clang-tidy
+        run: find core bridge -type f -name '*.cpp' -print0 | xargs -0 clang-tidy -p out/build/default
 
-      - name: Check formatting
-        run: python3 tools.py format-check
-
-  # ========================================
-  # AddressSanitizer + UBSan + LSan
-  # ========================================
-
-  asan:
-    name: ASan + UBSan + LSan
-
+  native-coverage:
+    name: C++ business logic coverage
     runs-on: ubuntu-latest
-    timeout-minutes: 20
-
+    timeout-minutes: 45
     env:
-      CC: gcc
-      CXX: g++
-
+      CC: clang
+      CXX: clang++
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+      - name: Install LLVM
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang llvm
+      - uses: lukka/run-vcpkg@v11
+        with:
+          runVcpkgInstall: true
+      - name: Configure coverage build
+        run: cmake --preset coverage
+      - name: Build and run native tests
+        run: |
+          cmake --build --preset coverage
+          LLVM_PROFILE_FILE="$GITHUB_WORKSPACE/out/build/coverage/goodreader-%p.profraw" \
+            ctest --preset coverage
+      - name: Enforce business logic coverage
+        run: |
+          llvm-profdata merge -sparse "$GITHUB_WORKSPACE"/out/build/coverage/goodreader-*.profraw \
+            -o out/build/coverage/coverage.profdata
+          llvm-cov export --format=text out/build/coverage/tests/goodreader_core_tests \
+            -object=out/build/coverage/bridge/libgoodreader_core.so \
+            -instr-profile=out/build/coverage/coverage.profdata \
+            > out/build/coverage/coverage.json
+          python3 scripts/check_llvm_coverage.py out/build/coverage/coverage.json 80
 
-      - name: Configure
-        run: cmake --preset asan
-
-      - name: Build
-        run: cmake --build --preset asan --parallel 2
-
-      - name: Test
-        run: ctest --preset asan
-
-  # ========================================
-  # ThreadSanitizer
-  # ========================================
-
-  tsan:
-    name: ThreadSanitizer
-
+  android:
+    name: Android / shared JVM
     runs-on: ubuntu-latest
-    timeout-minutes: 20
-
-    env:
-      CC: gcc
-      CXX: g++
-
+    timeout-minutes: 45
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: android-actions/setup-android@v3
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Install Android SDK
+        run: sdkmanager "platforms;android-35" "build-tools;35.0.0" "cmake;3.22.1" "ndk;27.2.12479018"
+      - name: Run Android and shared tests
+        run: >-
+          ./gradlew :apps:android:assembleDebug
+          :apps:android:testDebugUnitTest
+          :core:domain:jvmTest
+          :core:application:jvmTest
+          :core:alignment:jvmTest
+          :infrastructure:database-sqldelight:jvmTest
+          :apps:windows:jvmTest
+      - name: Run Android UI tests
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          script: ./gradlew :apps:android:connectedDebugAndroidTest
+      - name: Verify core coverage
+        run: ./gradlew :core:domain:koverVerify :core:application:koverVerify
 
-      - name: Configure
-        run: cmake --preset tsan
+  apple:
+    name: iOS / macOS
+    runs-on: macos-15
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: android-actions/setup-android@v3
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Install Android SDK
+        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Build SQLDelight Apple framework
+        run: |
+          ./gradlew :infrastructure:database-sqldelight:assembleGoodReaderCoreReleaseXCFramework
+          mkdir -p apps/apple/Frameworks
+          cp -R infrastructure/database-sqldelight/build/XCFrameworks/release/GoodReaderCore.xcframework \
+            apps/apple/Frameworks/
+      - name: Generate Apple app projects
+        run: xcodegen generate --spec apps/apple/project.yml --project apps/apple
+      - name: Build and test Kotlin Apple targets
+        run: ./gradlew iosSimulatorArm64Test macosArm64Test
+      - name: Test SwiftUI package
+        run: swift test --package-path apps/apple
+      - name: Test iOS app
+        run: >-
+          xcodebuild test
+          -project apps/apple/GoodReader.xcodeproj
+          -scheme GoodReaderiOS
+          -destination 'platform=iOS Simulator,name=iPhone 16'
+      - name: Test macOS app
+        run: >-
+          xcodebuild test
+          -project apps/apple/GoodReader.xcodeproj
+          -scheme GoodReadermacOS
+          -destination 'platform=macOS'
+      - name: Lint Swift
+        run: |
+          brew install swiftlint
+          swiftlint lint --strict
 
-      - name: Build
-        run: cmake --build --preset tsan --parallel 2
+  windows:
+    name: Windows desktop
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: android-actions/setup-android@v3
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Install Android SDK
+        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+      - name: Test and package desktop app
+        run: .\gradlew.bat :apps:windows:jvmTest :apps:windows:createDistributable
 
-      - name: Test
-        run: ctest --preset tsan
+  quality:
+    name: Formatting and static analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: android-actions/setup-android@v3
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Install Android SDK
+        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+      - name: Check Kotlin style and static analysis
+        run: ./gradlew ktlintCheck detekt

@@ -1,0 +1,25 @@
+CREATE TABLE AudioTrack (
+    id TEXT NOT NULL PRIMARY KEY,
+    book_id TEXT NOT NULL REFERENCES Book(id) ON DELETE CASCADE,
+    uri TEXT NOT NULL,
+    format TEXT NOT NULL,
+    duration_millis INTEGER NOT NULL CHECK (duration_millis > 0),
+    chapter_index INTEGER NOT NULL CHECK (chapter_index >= 0),
+    UNIQUE (book_id, chapter_index)
+);
+
+CREATE INDEX audio_track_book_idx ON AudioTrack(book_id, chapter_index);
+
+selectAudioTracksForBook:
+SELECT *
+FROM AudioTrack
+WHERE book_id = ?
+ORDER BY chapter_index;
+
+upsertAudioTrack:
+INSERT OR REPLACE INTO AudioTrack(id, book_id, uri, format, duration_millis, chapter_index)
+VALUES (?, ?, ?, ?, ?, ?);
+
+deleteAudioTracksForBook:
+DELETE FROM AudioTrack
+WHERE book_id = ?;
